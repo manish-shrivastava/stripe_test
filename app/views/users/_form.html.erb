@@ -1,0 +1,163 @@
+<%= form_with(model: user, local: true, id: 'payment-form') do |form| %>
+  <% if user.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(user.errors.count, "error") %> prohibited this user from being saved:</h2>
+
+      <ul>
+      <% user.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <!-- <form id='payment-form'> -->
+
+  <div class="field">
+    <%= form.label :email %>
+    <%= form.text_field :email %>
+  </div>
+
+  <label>
+    Card details
+    <!-- placeholder for Elements -->
+    <div id="card-element"></div>
+  </label>
+  <button type="submit">Submit Payment</button>
+<!-- </form> -->
+<%end%>
+<style type="text/css">
+  /**
+* Shows how you can use CSS to style your Element's container.
+* These classes are added to your Stripe Element by default.
+* You can override these classNames by using the options passed
+* to the `card` elemenent.
+* https://stripe.com/docs/js/elements_object/create_element?type=card#elements_create-options-classes
+*/
+
+.StripeElement {
+  height: 40px;
+  padding: 10px 12px;
+  width: 100%;
+  color: #32325d;
+  background-color: white;
+  border: 1px solid transparent;
+  border-radius: 4px;
+
+  box-shadow: 0 1px 3px 0 #e6ebf1;
+  -webkit-transition: box-shadow 150ms ease;
+  transition: box-shadow 150ms ease;
+}
+
+.StripeElement--focus {
+  box-shadow: 0 1px 3px 0 #cfd7df;
+}
+
+.StripeElement--invalid {
+  border-color: #fa755a;
+}
+
+.StripeElement--webkit-autofill {
+  background-color: #fefde5 !important;
+}
+</style>
+<script type="text/javascript">
+  var stripe = Stripe('pk_test_qLrSZAgqB2Xy5hzIoEPaVPZI');
+
+var elements = stripe.elements();
+
+// Set up Stripe.js and Elements to use in checkout form
+var style = {
+  base: {
+    color: "#32325d",
+    fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+    fontSmoothing: "antialiased",
+    fontSize: "16px",
+    "::placeholder": {
+      color: "#aab7c4"
+    }
+  },
+  invalid: {
+    color: "#fa755a",
+    iconColor: "#fa755a"
+  },
+};
+
+var cardElement = elements.create('card', {style: style});
+cardElement.mount('#card-element');
+
+
+
+var form = document.getElementById('payment-form');
+
+form.addEventListener('submit', function(event) {
+  // We don't want to let default form submission happen here,
+  // which would refresh the page.
+  event.preventDefault();
+
+  stripe.createPaymentMethod({
+    type: 'card',
+    card: cardElement,
+    billing_details: {
+      // Include any additional collected billing details.
+      name: 'Jenny Rosen',
+    },
+  }).then(stripePaymentMethodHandler);
+});
+
+
+
+
+function stripePaymentMethodHandler(result) {
+  if (result.error) {
+    // Show error in payment form
+  } else {
+    // Otherwise send paymentMethod.id to your server (see Step 4)
+    fetch('/pay', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        payment_method_id: result.paymentMethod.id,
+      })
+    }).then(function(result) {
+      // Handle server response (see Step 4)
+      result.json().then(function(json) {
+        handleServerResponse(json);
+      })
+    });
+  }
+}
+
+
+
+function handleServerResponse(response) {
+  if (response.error) {
+    // Show error from server on payment form
+  } else if (response.requires_action) {
+    // Use Stripe.js to handle required card action
+    stripe.handleCardAction(
+      response.payment_intent_client_secret
+    ).then(handleStripeJsResult);
+  } else {
+    // Show success message
+  }
+}
+
+function handleStripeJsResult(result) {
+  if (result.error) {
+    // Show error in payment form
+  } else {
+    // The card action has been handled
+    // The PaymentIntent can be confirmed again on the server
+    fetch('/pay', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_intent_id: result.paymentIntent.id })
+    }).then(function(confirmResult) {
+      return confirmResult.json();
+    }).then(handleServerResponse);
+  }
+}
+
+</script>
