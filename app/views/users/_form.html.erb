@@ -118,6 +118,7 @@ function stripePaymentMethodHandler(result) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         payment_method_id: result.paymentMethod.id,
+        user_email: document.getElementById('user_email').value,
       })
     }).then(function(result) {
       // Handle server response (see Step 4)

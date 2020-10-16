@@ -39,7 +39,7 @@ class UsersController < ApplicationController
   end
 
   def pay
-    
+    debugger
     data = JSON.parse(request.body.read.to_s)
     begin
       if data['payment_method_id']

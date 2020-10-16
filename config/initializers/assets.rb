@@ -12,3 +12,4 @@ Rails.application.config.assets.paths << Rails.root.join('node_modules')
 # application.js, application.css, and all non-JS/CSS in the app/assets
 # folder are already added.
 # Rails.application.config.assets.precompile += %w( admin.js admin.css )
+Stripe.api_key = 'sk_test_oMGjz9hV2hrHzaf8offzuy61'
